@@ -1,5 +1,3 @@
-// script.js
-
 // Load quotes from localStorage or use default
 let quotes = JSON.parse(localStorage.getItem("quotes")) || [
   { text: "The best way to get started is to quit talking and begin doing.", category: "Motivation" },
@@ -8,13 +6,15 @@ let quotes = JSON.parse(localStorage.getItem("quotes")) || [
   { text: "Dream it. Wish it. Do it.", category: "Inspiration" }
 ];
 
-// Populate categories dynamically
+// Populate category dropdown
 function populateCategories() {
   const categoryFilter = document.getElementById("categoryFilter");
+  if (!categoryFilter) return console.error("Missing #categoryFilter in HTML");
+
   categoryFilter.innerHTML = `<option value="all">All Categories</option>`;
 
+  // Get unique categories
   const categories = [...new Set(quotes.map(q => q.category))];
-
   categories.forEach(cat => {
     const option = document.createElement("option");
     option.value = cat;
@@ -22,25 +22,31 @@ function populateCategories() {
     categoryFilter.appendChild(option);
   });
 
-  // Restore last selected category from localStorage
+  // Restore previous category
   const lastCategory = localStorage.getItem("selectedCategory");
-  if (lastCategory) {
+  if (lastCategory && [...categoryFilter.options].some(opt => opt.value === lastCategory)) {
     categoryFilter.value = lastCategory;
-    filterQuotes(); // Apply filter on load
   }
 }
 
-// Show all quotes or filtered quotes
+// Filter and display quotes
 function filterQuotes() {
-  const selectedCategory = document.getElementById("categoryFilter").value;
+  const categoryFilter = document.getElementById("categoryFilter");
+  const quoteDisplay = document.getElementById("quoteDisplay");
+
+  if (!categoryFilter || !quoteDisplay) {
+    return console.error("Missing #categoryFilter or #quoteDisplay in HTML");
+  }
+
+  const selectedCategory = categoryFilter.value;
   localStorage.setItem("selectedCategory", selectedCategory);
 
-  const quoteDisplay = document.getElementById("quoteDisplay");
   quoteDisplay.innerHTML = "";
 
-  const filteredQuotes = selectedCategory === "all"
-    ? quotes
-    : quotes.filter(q => q.category === selectedCategory);
+  const filteredQuotes =
+    selectedCategory === "all"
+      ? quotes
+      : quotes.filter(q => q.category === selectedCategory);
 
   if (filteredQuotes.length === 0) {
     quoteDisplay.textContent = "No quotes available for this category.";
@@ -56,8 +62,7 @@ function filterQuotes() {
 
 // Add a new quote
 function addQuote(text, category) {
-  const newQuote = { text, category };
-  quotes.push(newQuote);
+  quotes.push({ text, category });
   localStorage.setItem("quotes", JSON.stringify(quotes));
   populateCategories();
   filterQuotes();
@@ -66,6 +71,8 @@ function addQuote(text, category) {
 // Create Add Quote form
 function createAddQuoteForm() {
   const formContainer = document.getElementById("formContainer");
+  if (!formContainer) return console.error("Missing #formContainer in HTML");
+
   formContainer.innerHTML = "";
 
   const form = document.createElement("form");
@@ -84,15 +91,16 @@ function createAddQuoteForm() {
   addBtn.type = "submit";
   addBtn.textContent = "Add Quote";
 
-  form.appendChild(quoteInput);
-  form.appendChild(categoryInput);
-  form.appendChild(addBtn);
+  form.append(quoteInput, categoryInput, addBtn);
 
-  form.addEventListener("submit", function (e) {
+  form.addEventListener("submit", e => {
     e.preventDefault();
     const text = quoteInput.value.trim();
     const category = categoryInput.value.trim();
-    if (!text || !category) return alert("Both fields required!");
+    if (!text || !category) {
+      alert("Both fields required!");
+      return;
+    }
     addQuote(text, category);
     quoteInput.value = "";
     categoryInput.value = "";
@@ -102,8 +110,13 @@ function createAddQuoteForm() {
 }
 
 // Initialize
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", () => {
   populateCategories();
   filterQuotes();
   createAddQuoteForm();
+
+  const categoryFilter = document.getElementById("categoryFilter");
+  if (categoryFilter) {
+    categoryFilter.addEventListener("change", filterQuotes);
+  }
 });
